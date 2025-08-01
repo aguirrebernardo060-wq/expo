@@ -8,9 +8,61 @@ import { INTERNAL_SLOT_NAME } from './constants';
 import { store, useRouteInfo } from './global-state/router-store';
 import { router, Router } from './imperative-api';
 import { usePreviewInfo } from './link/preview/PreviewRouteContext';
-import { RouteParams, RouteSegments, UnknownOutputParams, Route } from './types';
+import { LoaderDataContext } from './loaders/context';
+import { RouteParams, RouteSegments, UnknownOutputParams, Route, LoaderFunction } from './types';
 
 export { useRouteInfo };
+
+// TODO(@hassankhan): Move to client globals
+declare global {
+  interface Window {
+    __EXPO_ROUTER_LOADER_DATA__?: Record<string, any>;
+  }
+}
+
+/**
+ * Returns the data loaded by the route's loader function. This hook only works
+ * when `web.output: "server" | "static"` is configured in your app config.
+ *
+ * @example
+ * ```tsx app/index.tsx
+ * // Route file
+ * export async function loader({ params }) {
+ *   return { user: await fetchUser(params.id) };
+ * }
+ *
+ * export default function UserRoute() {
+ *   const data = useLoader(loader);
+ *   return <Text>{data.user.name}</Text>;
+ * }
+ * ```
+ */
+export function useLoader<T = any>(loader: LoaderFunction<T>): T {
+  const routePath = usePathname();
+  const loaderDataContext = React.useContext(LoaderDataContext);
+
+  // Retrieve loader data at build-time
+  if (loaderDataContext && routePath in loaderDataContext) {
+    return loaderDataContext[routePath];
+  }
+
+  // Retrieve loader data during client-side hydration
+  if (typeof window !== 'undefined') {
+    if (!window.__EXPO_ROUTER_LOADER_DATA__) {
+      throw new Error(
+        'Server data loaders are not enabled. Add `unstable_useServerDataLoaders: true` to your expo-router plugin config.'
+      );
+    }
+    const preloadedData = window.__EXPO_ROUTER_LOADER_DATA__[routePath];
+    if (preloadedData !== undefined) {
+      return preloadedData;
+    }
+  }
+
+  throw new Error(
+    'Server data loaders do not work on the client. They only work with `web.output` set to `static` or `server` in your app config'
+  );
+}
 
 /**
  * Returns the [navigation state](https://reactnavigation.org/docs/navigation-state/)
