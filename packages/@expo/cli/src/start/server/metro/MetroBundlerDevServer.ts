@@ -398,9 +398,12 @@ export class MetroBundlerDevServer extends BundlerDevServer {
       // Get route generating function
       renderAsync: async (pathname: string) => {
         const location = new URL(pathname, url);
+        const { unstable_useServerDataLoaders } = exp.extra?.router;
 
         return await getStaticContent(location, {
-          loaderData: await this.executeRouteLoaderAsync(location),
+          loaderData: unstable_useServerDataLoaders
+            ? await this.executeRouteLoaderAsync(location)
+            : undefined,
         });
       },
     };
@@ -493,9 +496,13 @@ export class MetroBundlerDevServer extends BundlerDevServer {
       });
 
       const location = new URL(pathname, this.getDevServerUrlOrAssert());
+      const { exp } = getConfig(this.projectRoot);
+      const { unstable_useServerDataLoaders } = exp.extra?.router;
 
       return await getStaticContent(location, {
-        loaderData: await this.executeRouteLoaderAsync(location),
+        loaderData: unstable_useServerDataLoaders
+          ? await this.executeRouteLoaderAsync(location)
+          : undefined,
       });
     };
 
