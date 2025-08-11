@@ -3,6 +3,8 @@ import { ExpoError } from './error';
 import { Manifest, Middleware, MiddlewareFunction, Route } from './types';
 import { getRedirectRewriteLocation, isResponse, parseParams } from './utils';
 
+export { ExpoError } from './error';
+
 type ResponseInitLike = Omit<ResponseInit, 'headers'> & {
   headers: Record<string, string>;
 };
